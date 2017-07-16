@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+	<title>Location</title>
+	<script type="text/javascript" src="libs/Bmap/baiduDitu.js"></script>
+</head>
+<body>
+	<div style="width:80%;height:650px;border:1px solid gray" id="container"></div>
+	<div style="right:10px;top:8px;position: absolute;width:18%; height: 650px;border:1px solid gray">
+	<p>
+		&nbsp;Switch:<input id="startBtn" type="button" onclick="startTool();" value="Choosing points" />
+	</p>
+	<hr>
+	<p style="padding: 0 5px;">
+		<span>Locatons:</span><input type="button" onclick="document.getElementById('info').innerHTML = ''" value="clear" />
+		<textarea id="info" style="width:94%;margin:2px;max-height: 980px;min-height: 440px;overflow-y:scroll;" readonly="readonly"></textarea>
+	</p>
+</div>
+</body>
+</html>
+<script type="text/javascript">
+	var map = new BMap.Map("container");
+	map.centerAndZoom("北京", 4); 
+	map.setDefaultCursor("pointer");
+	map.enableScrollWheelZoom();
+	var key = 1;  
+	var newpoint;  
+	var points = [];  
+
+	function startTool(){
+		if(key==1){
+			document.getElementById("startBtn").style.background = "green";
+			document.getElementById("startBtn").style.color = "white";
+			document.getElementById("startBtn").value = "Opening";
+			key=0;
+		}
+		else{
+			document.getElementById("startBtn").value = "Choosing points";
+			document.getElementById("startBtn").style.background = "";
+			document.getElementById("startBtn").style.color = "";
+			key=1;
+		}
+	}
+
+	map.addEventListener("click",function(e){   
+		newpoint = new BMap.Point(e.point.lng,e.point.lat);
+		if(key==0){
+			points.push(newpoint);
+			document.getElementById("info").innerHTML += "[" + e.point.lng + "," + e.point.lat + "],\n";   
+		}
+	});
+</script>

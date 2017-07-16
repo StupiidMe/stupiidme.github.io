@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<title>Earth Surface Wind and Wave Field Visualization</title>  
+</head>
+<body>
+<div style="width:85%;height:700px;border:1px solid gray" id="main"></div>
+<div style="right:0px;top:6px;position: absolute;width:15%; height: 700px;border:1px solid gray">
+<p>
+	&nbsp;Choose Locations in Map：<input id="startBtn" type="button" onclick="startTool();" value="Open Map and Choose Locations" />
+</p>
+<p>
+	&nbsp;Input the longitude:<input type="input" name="lon"  id="lon" value=""/>
+</p>
+<p>
+<p>
+	&nbsp;Input the latitude: <input type="input" name="lat"  id="lat" value=""/>
+	<input type="button" onclick="search()" value="search" />
+</p>
+<p>
+<p style="padding: 0 5px;">
+	<span>Weather Results: </span><input type="button" onclick="document.getElementById('info').innerHTML = '';" value="clear" />
+	<textarea id="info" style="width:94%;margin:2px;max-height: 990px;min-height: 440px;overflow-y:scroll;" readonly="readonly"></textarea>
+</p>
+</div>
+<div id="main" style="height:700px"></div>
+<script src="libs/winds_wave.js"></script>
+<script src="libs/echarts/echarts.js"></script>
+<script src="libs/echarts-x/echarts-x.js"></script>
+<script type="text/javascript">
+	function startTool(){
+		window.open('Location.html')
+	}
+
+	function search(){
+		var geoX = document.getElementById("lon").value;
+		var geoY = document.getElementById("lat").value;
+		var X = parseInt(geoX) + 180;
+		var Y = parseInt(geoY) + 90;
+		var wind_v = data.data[Y*360+X];
+		var wave_v = data.data[Y*360+X+180*360];
+		
+		var wind_speed = Math.sqrt(wind_v[0]*wind_v[0]+wind_v[1]*wind_v[1])*data.max;
+		wind_speed =Math.round(parseFloat(wind_speed)*100)/100;
+		var wave_speed = Math.sqrt(wave_v[0]*wave_v[0]+wave_v[1]*wave_v[1])*data.max;
+		wave_speed =Math.round(parseFloat(wave_speed)*100)/100;
+		
+		var wave_direction = 0;
+		if (wave_speed>0.0001){
+			var angel = Math.asin(wave_v[1]/wave_speed)*180/3.14159*data.max;
+			if (wave_v[0]>0){
+				if (wave_v[1]>=0){
+					wave_direction = angel;
+					}
+				if (wave_v[1]<0){
+					wave_direction = 360 + angel;
+					}
+				}
+			if (wave_v[0]<=0){
+				wave_direction = 180 - angel;
+				}
+		}
+		wave_direction =Math.round(parseFloat(wave_direction)*100)/100;
+		
+		var wind_direction = 0;
+		if (wind_speed>0.0001){
+			var angel = Math.asin(wind_v[1]/wind_speed)*180/3.14159*data.max;
+			if (wind_v[0]>0){
+				if (wind_v[1]>=0){
+					wind_direction = angel;
+					}
+				if (wind_v[1]<0){
+					wind_direction = 360 + angel;
+					}
+				}
+			if (wind_v[0]<=0){
+				wind_direction = 180 - angel;
+				}
+		}
+		wind_direction =Math.round(parseFloat(wind_direction)*100)/100;
+		document.getElementById("info").innerHTML += 'New Location\nLongitude:'+geoX+'\n'+'Latitude:'+geoY+'\n';
+		document.getElementById("info").innerHTML += 'Wind\nSpeed:'+wind_speed+'m/s\n'+'Direction: '+wind_direction+'\n';
+		document.getElementById("info").innerHTML += 'Wave\nSpeed:'+wave_speed+'m/s\n'+'Direction: '+wave_direction+'\n\n';
+	}
+
+	require.config({
+		paths: {'echarts'  : 'libs/echarts',
+				'echarts-x': 'libs/echarts-x'
+				}
+		});
+	require(['echarts','echarts-x','echarts/chart/map','echarts-x/chart/map3d'],
+			function (ec){
+				var myChart = ec.init(document.getElementById('main'));
+				var field_winds = [];
+				var field_wave = [];
+				var p = 0;
+				for (var j = 0; j < data.ny; j++) {
+					field_winds[j] = [];
+					for (var i = 0; i < data.nx; i++, p++) {
+						data.data[p][0] /= data.max;
+						data.data[p][1] /= data.max;
+						field_winds[j][i] = data.data[p];
+						}
+					};
+				for (var j = 0; j < data.ny-1; j++) {
+					field_wave[j] = [];
+					for (var i = 0; i < data.nx; i++, p++) {
+						data.data[p][0] /= data.max;
+						data.data[p][1] /= data.max;
+						field_wave[j][i] = data.data[p];
+						}
+					};
+				var option = {
+					title: {
+						text: 'Earth Surface Wind and Wave Field Visualization',
+						x: 'right',
+						textStyle: {color: 'yellow'}
+						},
+					legend: {
+						show: true,
+						data: ['globle','winds','wave'],
+						x: 'left',
+						orient: 'vertical',
+						textStyle: {color: 'yellow'}
+						},
+					tooltip: {formatter: '{b}'},
+
+					series: [ 
+						{
+							name: 'globle',
+							type: 'map3d',
+							background: 'black',
+							baseLayer: {
+								backgroundColor: 'black',
+								backgroundImage: 'libs/figure.jpg'
+							},
+							itemStyle: {
+								normal: {
+									label: {
+										show: true
+									},
+									borderWidth: 1,
+									borderColor: '#fff',
+									areaStyle: {
+										color: 'rgba(0, 0, 0, 0)'
+									}
+								}
+							},
+							data: [{}],
+							roam: {
+								focus:'',
+								zoom: 1,
+								maxZoom: 1
+								},
+							surfaceLayers: [{
+								type: 'particle',
+								distance: 1,
+								size: [2048, 1024],
+								}],
+						},
+						{
+							name: 'winds',
+							type: 'map3d',
+							flat: true,
+							flatAngle: 0,
+							baseLayer: {
+								backgroundColor: 'black',
+								backgroundImage: 'libs/figure.jpg',
+							},
+							mapLocation: {
+								x: 0,
+								y: 0,
+								width: '100%',
+								height: '100%'
+							},
+							itemStyle: {
+								normal: {
+									label: {
+										show: true
+									},
+									borderWidth: 1,
+									borderColor: '#d99524',
+									areaStyle: {color: 'rgba(0, 0, 0, 0)'}
+									}
+								},
+							data: [{}],
+							roam: {
+								focus:'',
+								zoom: 3,
+								maxZoom: 4
+								},
+							surfaceLayers: [{
+								type: 'particle',
+								distance: 1,
+								size: [2048, 1024],
+								particle: {
+									vectorField: field_winds,
+									color: 'green',
+									speedScaling: 1,
+									sizeScaling: 0.5,
+									number: 256 * 256,
+									motionBlurFactor: 0.99
+									}
+								}],
+						},
+						{
+							name: 'wave',
+							type: 'map3d',
+							flat: true,
+							flatAngle: 0,
+							baseLayer: {
+								backgroundColor: '',
+								backgroundImage: 'libs/figure.jpg',
+							},
+							mapLocation: {
+								x: 0,
+								y: 0,
+								width: '100%',
+								height: '100%'
+							},
+							itemStyle: {
+								normal: {
+									label: {
+										show: true
+									},
+									borderWidth: 1,
+									borderColor: '#d99524',
+									areaStyle: {color: 'rgba(0, 0, 0, 0)'}
+									}
+								},
+							data: [{}],
+							roam: {
+								focus:'',
+								zoom: 3,
+								maxZoom: 4
+								},
+							surfaceLayers: [{
+								type: 'particle',
+								distance: 0.5,
+								size: [2048, 1024],
+								particle: {
+									vectorField: field_wave,
+									color: 'blue',
+									speedScaling: 1,
+									sizeScaling: 0.5,
+									number: 256 * 256,
+									motionBlurFactor: 0.99
+									}
+								}],
+						}]
+					};
+					myChart.setOption(option);
+				}
+			)
+</script>
+</body>
